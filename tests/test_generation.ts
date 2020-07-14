@@ -16,6 +16,9 @@ tap.test('test_generation', async (test) => {
     compareContent: true,
     compareSize: true,
   });
+  if (!result.same) {
+    console.error(JSON.stringify(result, null, '\t'));
+  }
   test.ok(result.same, 'Output and snapshot directory should be the same.');
   test.end();
 });
