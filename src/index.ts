@@ -127,7 +127,7 @@ export default class ImageTransformer {
   async transform(inputDirectory: string, tsOutputDirectory: string, imageOutputDirectory: string) {
     await Promise.all([
       this.transformSvgs(inputDirectory, tsOutputDirectory),
-      this.transformPngs(inputDirectory, tsOutputDirectory, imageOutputDirectory),
+      this.transformPngs(inputDirectory, imageOutputDirectory),
     ]);
     this.writeIndex(tsOutputDirectory);
   }
@@ -149,11 +149,7 @@ export default class ImageTransformer {
     });
   }
 
-  async transformPngs(
-    inputDirectory: string,
-    tsOutputDirectory: string,
-    imageOutputDirectory: string,
-  ) {
+  async transformPngs(inputDirectory: string, imageOutputDirectory: string) {
     const files = await glob('**/*.png', { cwd: inputDirectory });
 
     await pmap(
