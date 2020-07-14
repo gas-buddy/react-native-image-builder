@@ -4,16 +4,17 @@ import minimist from 'minimist';
 import ImageTransformer from './index';
 
 const argv = minimist(process.argv.slice(2));
-const [sourceDirectory, destinationDirectory] = argv._;
+const [imageDirectory, tsOutputDirectory, imageOutputDirectory] = argv._;
 
 const usage = `
 USAGE:
-  npx react-native-image-builder <source-directory> <destination-directory>
+  npx react-native-image-builder <image-source-directory> <ts-output-directory> <image-output-directory>
 `;
 
-assert(sourceDirectory, usage);
-assert(destinationDirectory, usage);
+assert(imageDirectory, usage);
+assert(tsOutputDirectory, usage);
+assert(imageOutputDirectory, usage);
 
 const imageTransformer = new ImageTransformer();
 
-imageTransformer.transform(sourceDirectory, destinationDirectory);
+imageTransformer.transform(imageDirectory, tsOutputDirectory, imageOutputDirectory);

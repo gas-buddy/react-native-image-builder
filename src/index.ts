@@ -118,17 +118,18 @@ export default class ImageTransformer {
       const indexPath = path.join(outputDirectory, relativeDir, 'index.ts');
       const finalText = `${jsHeader}${index}`;
       if (!fs.existsSync(indexPath) || fs.readFileSync(indexPath, 'utf8') !== finalText) {
+        mkdirp.sync(path.dirname(indexPath));
         fs.writeFileSync(indexPath, finalText, 'utf8');
       }
     });
   }
 
-  async transform(inputDirectory: string, outputDirectory: string) {
+  async transform(inputDirectory: string, tsOutputDirectory: string, imageOutputDirectory: string) {
     await Promise.all([
-      this.transformSvgs(inputDirectory, outputDirectory),
-      this.transformPngs(inputDirectory, outputDirectory),
+      this.transformSvgs(inputDirectory, tsOutputDirectory),
+      this.transformPngs(inputDirectory, tsOutputDirectory, imageOutputDirectory),
     ]);
-    this.writeIndex(outputDirectory);
+    this.writeIndex(tsOutputDirectory);
   }
 
   async transformSvgs(inputDirectory: string, outputDirectory: string) {
@@ -148,7 +149,11 @@ export default class ImageTransformer {
     });
   }
 
-  async transformPngs(inputDirectory: string, outputDirectory: string) {
+  async transformPngs(
+    inputDirectory: string,
+    tsOutputDirectory: string,
+    imageOutputDirectory: string,
+  ) {
     const files = await glob('**/*.png', { cwd: inputDirectory });
 
     await pmap(
@@ -160,7 +165,7 @@ export default class ImageTransformer {
           .split('@');
         const output3x = `${baseName}@3x.png`;
         this.addIndex(path.dirname(file), path.basename(baseName), 'png');
-        if (needsUpdate(inputFile, path.join(outputDirectory, output3x))) {
+        if (needsUpdate(inputFile, path.join(imageOutputDirectory, output3x))) {
           const sharpImage = sharp(inputFile);
           let { width, height } = await sharpImage.metadata();
           if (dims && dims.indexOf('x') > 0) {
@@ -169,21 +174,21 @@ export default class ImageTransformer {
           if (width! % 3 || height! % 3 || (height! * 2) % 3 || (width! * 2) % 3) {
             console.error(`${file} dimensions cannot be properly scaled to 1/3rd and 2/3rd size`);
           }
-          mkdirp.sync(path.dirname(path.join(outputDirectory, file)));
+          mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
           console.log('Preparing image', file);
           await Promise.all([
             sharpImage
               .clone()
               .resize({ width, height })
-              .toFile(path.join(outputDirectory, output3x)),
+              .toFile(path.join(imageOutputDirectory, output3x)),
             sharpImage
               .clone()
               .resize({ width: (width! * 2) / 3, height: (height! * 2) / 3 })
-              .toFile(path.join(outputDirectory, `${baseName}@2x.png`)),
+              .toFile(path.join(imageOutputDirectory, `${baseName}@2x.png`)),
             sharpImage
               .clone()
               .resize({ width: width! / 3, height: height! / 3 })
-              .toFile(path.join(outputDirectory, `${baseName}.png`)),
+              .toFile(path.join(imageOutputDirectory, `${baseName}.png`)),
           ]);
         }
       },

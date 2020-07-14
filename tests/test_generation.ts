@@ -6,11 +6,12 @@ import Generator from '../build/index';
 
 tap.test('test_generation', async (test) => {
   const gen = new Generator();
-  const outputDir = path.resolve(__dirname, './output');
-  await gen.transform(path.resolve(__dirname, './images'), outputDir);
+  const tsOutputDir = path.resolve(__dirname, './output/src');
+  const imgOutputDir = path.resolve(__dirname, './output/build');
+  await gen.transform(path.resolve(__dirname, './images'), tsOutputDir, imgOutputDir);
 
   const snapshotDir = path.resolve(__dirname, './snapshots');
-  const result = compareSync(outputDir, snapshotDir, {
+  const result = compareSync(path.resolve(__dirname, './output'), snapshotDir, {
     compareDate: false,
     compareContent: true,
     compareSize: true,
