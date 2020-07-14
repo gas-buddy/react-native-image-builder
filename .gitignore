@@ -18,7 +18,7 @@ tests/output
 *.orig
 
 work
-build
+/build
 pids
 logs
 results
