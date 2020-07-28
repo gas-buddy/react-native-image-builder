@@ -29,7 +29,7 @@ function xmlnsSvgToXmlns(svgrOutput: string) {
 
 function fixTsProps(svgrOutput: string) {
   return svgrOutput
-    .replace(/Svg, { (.*) } from/, 'Svg, { $1, SvgProps } from')
+    .replace(/Svg, {\s*([\s\S]*)\s*} from/, 'Svg, { $1  SvgProps,\n } from')
     .replace(/SvgComponent\(props/, 'SvgComponent(props: SvgProps');
 }
 
