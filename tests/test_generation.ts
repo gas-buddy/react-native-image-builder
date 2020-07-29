@@ -1,11 +1,18 @@
 import tap from 'tap';
 import path from 'path';
+import rimraf from 'rimraf';
 import { compareSync } from 'dir-compare';
 // TODO not sure why I can't run against src...
 import Generator from '../build/index';
 
 tap.test('test_generation', async (test) => {
   const gen = new Generator();
+  try {
+    rimraf.sync(path.resolve(__dirname, './output'));
+  } catch (error) {
+    // nothing to do
+    console.log('Output folder deletion failed', error);
+  }
   const tsOutputDir = path.resolve(__dirname, './output/src/');
   const imgOutputDir = path.resolve(__dirname, './output/build/');
   await gen.transform(path.resolve(__dirname, './images'), tsOutputDir, imgOutputDir);
