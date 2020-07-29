@@ -29,9 +29,10 @@ function xmlnsSvgToXmlns(svgrOutput: string) {
 
 function fixTsProps(svgrOutput: string) {
   return svgrOutput.replace(
-    /Svg, {\s*([\s\S]*)\s*} from/,
-    (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
-  );
+      /Svg, {\s*([\s\S]*)\s*} from/,
+      (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
+    )
+    .replace(/SvgComponent\(props/, 'SvgComponent(props: SvgProps');
 }
 
 function fixRenderingBugs(svgrOutput: string) {
