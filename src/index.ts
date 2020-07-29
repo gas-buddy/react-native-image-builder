@@ -28,7 +28,8 @@ function xmlnsSvgToXmlns(svgrOutput: string) {
 }
 
 function fixTsProps(svgrOutput: string) {
-  return svgrOutput.replace(
+  return svgrOutput
+    .replace(
       /Svg, {\s*([\s\S]*)\s*} from/,
       (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
     )
