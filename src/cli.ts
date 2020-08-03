@@ -8,13 +8,15 @@ const [imageDirectory, tsOutputDirectory, imageOutputDirectory] = argv._;
 
 const usage = `
 USAGE:
-  npx react-native-image-builder <image-source-directory> <ts-output-directory> <image-output-directory>
+  npx react-native-image-builder <image-source-directory> <ts-output-directory> <image-output-directory> [--disable-ts-check]
 `;
 
 assert(imageDirectory, usage);
 assert(tsOutputDirectory, usage);
 assert(imageOutputDirectory, usage);
 
-const imageTransformer = new ImageTransformer();
+const imageTransformer = new ImageTransformer({
+  disableTsCheck: argv['disable-ts-check'],
+});
 
 imageTransformer.transform(imageDirectory, tsOutputDirectory, imageOutputDirectory);

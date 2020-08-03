@@ -12,6 +12,7 @@ import svgr, { resolveConfig } from '@svgr/core';
 const glob = util.promisify(globCb);
 
 const jsHeader = '/* THIS IS AN AUTO-GENERATED FILE BY util/build-images.js - DO NOT EDIT */\n';
+const noTsCheckSvgPreamble = '// @ts-nocheck\n';
 
 // Portions from https://github.com/kristerkari/react-native-svg-transformer/blob/master/index.js
 
@@ -83,8 +84,21 @@ function safeName(name: string) {
   return upperFirst(camelCase(name));
 }
 
+export interface GeneratorOptions {
+  disableTsCheck?: boolean;
+}
+
 export default class ImageTransformer {
   indexes: { [key: string]: any } = { '': {} };
+
+  svgPreamble = '';
+
+  constructor(options?: GeneratorOptions) {
+    const { disableTsCheck = false } = options || {};
+    if (disableTsCheck) {
+      this.svgPreamble = noTsCheckSvgPreamble;
+    }
+  }
 
   addIndex(dir: string, name: string, type: string) {
     const indexDir = dir === '.' ? '' : dir;
@@ -147,7 +161,7 @@ export default class ImageTransformer {
         console.log('Generating JS from SVG', file);
         const code = transformSvg(inputFile);
         mkdirp.sync(outDir);
-        fs.writeFileSync(outputFile, code, 'utf8');
+        fs.writeFileSync(outputFile, `${this.svgPreamble}${code}`, 'utf8');
       }
     });
   }
