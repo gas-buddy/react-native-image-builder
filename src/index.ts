@@ -203,7 +203,7 @@ export function getVectors(...names: Array<Vectors>) {
 }
 
 export function getBitmaps(...names: Array<Bitmaps>) {
-  return names.map(getBitmaps);
+  return names.map(getBitmap);
 }
 `);
 
