@@ -156,6 +156,7 @@ export default class ImageTransformer {
     const lines = [
       '/* eslint-disable prettier/prettier, quotes */',
       "import { SvgProps } from 'react-native-svg';",
+      "import { ImageSourcePropType } from 'react-native';",
       '',
     ];
     lines.push(
@@ -174,7 +175,7 @@ export default class ImageTransformer {
 
     lines.push(
       '',
-      'export function getBitmap(name: Bitmaps): string {',
+      'export function getBitmap(name: Bitmaps): ImageSourcePropType {',
       '  switch (name) {',
       png
         .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.png');`)
@@ -195,6 +196,17 @@ export default class ImageTransformer {
       '}',
       '',
     );
+
+    lines.push(`
+export function getVectors(...names: Array<Vectors>) {
+  return names.map(getVector);
+}
+
+export function getBitmaps(...names: Array<Bitmaps>) {
+  return names.map(getBitmaps);
+}
+`);
+
     const indexPath = path.join(outputDirectory, 'index.ts');
     const finalText = lines.join('\n');
     if (!fs.existsSync(indexPath) || fs.readFileSync(indexPath, 'utf8') !== finalText) {
