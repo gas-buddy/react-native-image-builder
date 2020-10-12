@@ -86,21 +86,30 @@ function safeName(name: string) {
 
 export interface GeneratorOptions {
   disableTsCheck?: boolean;
+  inlineRequire?: boolean;
 }
 
 export default class ImageTransformer {
   indexes: { [key: string]: any } = { '': {} };
 
+  flatIndex?: { png: Array<any>; svg: Array<any> };
+
   svgPreamble = '';
 
   constructor(options?: GeneratorOptions) {
-    const { disableTsCheck = false } = options || {};
+    const { disableTsCheck = false, inlineRequire = false } = options || {};
     if (disableTsCheck) {
       this.svgPreamble = noTsCheckSvgPreamble;
     }
+    if (inlineRequire) {
+      this.flatIndex = { png: [], svg: [] };
+    }
   }
 
-  addIndex(dir: string, name: string, type: string) {
+  addIndex(dir: string, name: string, type: 'svg' | 'png' | 'dir') {
+    if (type !== 'dir' && this.flatIndex) {
+      this.flatIndex[type].push(dir === '.' ? name : `${dir}/${name}`);
+    }
     const indexDir = dir === '.' ? '' : dir;
     this.indexes[indexDir] = this.indexes[indexDir] || {};
     this.indexes[indexDir][name] = type;
@@ -141,12 +150,65 @@ export default class ImageTransformer {
     });
   }
 
+  writeInlineRequireIndex(outputDirectory: string) {
+    const png = this.flatIndex!.png;
+    const svg = this.flatIndex!.svg;
+    const lines = ['/* eslint-disable prettier/prettier, quotes */'];
+    lines.push(
+      `type Bitmaps = ${png
+        .map((ln) => JSON.stringify(ln))
+        .join(' |\n  ')
+        .trim()};`,
+    );
+    lines.push('');
+    lines.push(
+      `type Vectors = ${svg
+        .map((ln) => JSON.stringify(ln))
+        .join(' |\n  ')
+        .trim()};`,
+    );
+
+    lines.push(
+      '',
+      'export function getBitmap(name: Bitmaps): string {',
+      '  switch (name) {',
+      png
+        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.png');`)
+        .join('\n'),
+      '  }',
+      '}',
+      '',
+    );
+
+    lines.push(
+      '',
+      'export function getVector(name: Vectors): ((props: SvgProps) => JSX.Element) {',
+      '  switch (name) {',
+      png
+        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}').default;`)
+        .join('\n'),
+      '  }',
+      '}',
+      '',
+    );
+    const indexPath = path.join(outputDirectory, 'index.ts');
+    const finalText = lines.join('\n');
+    if (!fs.existsSync(indexPath) || fs.readFileSync(indexPath, 'utf8') !== finalText) {
+      mkdirp.sync(path.dirname(indexPath));
+      fs.writeFileSync(indexPath, finalText, 'utf8');
+    }
+  }
+
   async transform(inputDirectory: string, tsOutputDirectory: string, imageOutputDirectory: string) {
     await Promise.all([
       this.transformSvgs(inputDirectory, tsOutputDirectory),
       this.transformPngs(inputDirectory, imageOutputDirectory),
     ]);
-    this.writeIndex(tsOutputDirectory);
+    if (this.flatIndex) {
+      this.writeInlineRequireIndex(tsOutputDirectory);
+    } else {
+      this.writeIndex(tsOutputDirectory);
+    }
   }
 
   async transformSvgs(inputDirectory: string, outputDirectory: string) {

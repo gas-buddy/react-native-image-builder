@@ -27,5 +27,15 @@ tap.test('test_generation', async (test) => {
     console.error(JSON.stringify(result, null, '\t'));
   }
   test.ok(result.same, 'Output and snapshot directory should be the same.');
+
+  const gen2 = new Generator({ inlineRequire: true });
+  try {
+    rimraf.sync(path.resolve(__dirname, './output'));
+  } catch (error) {
+    // nothing to do
+    console.log('Output folder deletion failed', error);
+  }
+  await gen2.transform(path.resolve(__dirname, './images'), tsOutputDir, imgOutputDir);
+
   test.end();
 });
