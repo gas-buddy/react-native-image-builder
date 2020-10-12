@@ -153,7 +153,11 @@ export default class ImageTransformer {
   writeInlineRequireIndex(outputDirectory: string) {
     const png = this.flatIndex!.png;
     const svg = this.flatIndex!.svg;
-    const lines = ['/* eslint-disable prettier/prettier, quotes */'];
+    const lines = [
+      '/* eslint-disable prettier/prettier, quotes */',
+      "import { SvgProps } from 'react-native-svg';",
+      '',
+    ];
     lines.push(
       `type Bitmaps = ${png
         .map((ln) => JSON.stringify(ln))
