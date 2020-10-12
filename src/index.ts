@@ -184,7 +184,7 @@ export default class ImageTransformer {
       '',
       'export function getVector(name: Vectors): ((props: SvgProps) => JSX.Element) {',
       '  switch (name) {',
-      png
+      svg
         .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}').default;`)
         .join('\n'),
       '  }',
