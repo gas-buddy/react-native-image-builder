@@ -160,14 +160,14 @@ export default class ImageTransformer {
       '',
     ];
     lines.push(
-      `type Bitmaps = ${png
+      `export type Bitmaps = ${png
         .map((ln) => JSON.stringify(ln))
         .join(' |\n  ')
         .trim()};`,
     );
     lines.push('');
     lines.push(
-      `type Vectors = ${svg
+      `export type Vectors = ${svg
         .map((ln) => JSON.stringify(ln))
         .join(' |\n  ')
         .trim()};`,
