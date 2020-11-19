@@ -73,11 +73,84 @@ function needsUpdate(infile: string, outfile: string) {
   return inStat.mtimeMs > outStat.mtimeMs;
 }
 
+function nthIndex(str: string, search: string, occurrence: number) {
+  const inputLength = str.length;
+  const index = -1;
+
+  while (occurrence-- && index++ < inputLength) {
+    index = str.indexOf(search, index);
+    if (index < 0) break;
+  }
+
+  return index;
+}
+
 function transformSvg(filename: string) {
   const config = resolveConfig.sync(path.dirname(filename));
   var svgrConfig = config ? Object.assign({}, defaultsvgrConfig, config) : defaultsvgrConfig;
   const jsCode = svgr.sync(fs.readFileSync(filename, 'utf8'), svgrConfig);
-  return fixRenderingBugs(jsCode);
+
+  // split element lines to collect current svg values
+  const elementSplit = jsCode.split('<');
+  let colorCount = 0;
+  let defaultColors = [];
+  // color modified svg element array
+  const jsSvgColorModifiedCode = elementSplit.map((row) => {
+    if (row.includes('fill="#') || row.includes('stroke="#')) {
+      // match rows with hex color
+      const match = row.match(/"#.*?"/g);
+      // if more than one was found, iterate and replace current colors with vars
+      if (match.length > 1) {
+        return match.reduce((acc, value, i) => {
+          defaultColors.push(value.replace(/"/g, ''));
+          const index = nthIndex(acc, '"#', i + 1);
+          const firstSection = acc.substring(0, index);
+          const secondSection = acc.substring(index);
+          const final = firstSection.concat(
+            secondSection.replace(/"#.*?"/, `{svgColor[${colorCount}]}`),
+          );
+          colorCount++;
+          return final;
+        }, row);
+      } else {
+        // otherwise, replace double quotes and value with var
+        defaultColors.push(match[0].replace(/"/g, ''));
+        const finalRow = row.replace(/"#.*?"/, `{svgColor[${colorCount}]}`);
+        colorCount++;
+        return finalRow;
+      }
+    }
+
+    return row;
+  });
+
+  const defaultColorsJs = `const defaultColors = [${defaultColors.map((x) => `'${x}'`)}];\n\n`;
+
+  const jsColorCode = jsSvgColorModifiedCode.join('<').split(' ');
+
+  const insertCode = (code: string, val: string, row: string) => {
+    const index = row.indexOf(val);
+    return row.substring(0, index) + code + row.substring(index);
+  };
+
+  const propLookupTable = {
+    "'react-native-svg';\n\nfunction": (str) => insertCode(defaultColorsJs, 'function', str),
+    'SvgComponent(props)': (str) =>
+      str.replace(
+        'props',
+        '{ color = defaultColors, ...rest } : { color: Array | String; rest: SvgProps }',
+      ),
+    return: (str) => insertCode(svgColorJs, 'return', str),
+    '{...props}>': (str) => str.replace('{...props}', '{...rest}'),
+  };
+
+  const jsModifiedProps = jsColorCode.map(
+    (val) => (propLookupTable[val.trim()] && propLookupTable[val.trim()](val)) || val,
+  );
+
+  const svgComponentCode = jsModifiedProps.join(' ');
+
+  return fixRenderingBugs(svgComponentCode);
 }
 
 function safeName(name: string) {
