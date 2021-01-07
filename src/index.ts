@@ -8,6 +8,7 @@ import mkdirp from 'mkdirp';
 import camelCase from 'lodash.camelcase';
 import upperFirst from 'lodash.upperfirst';
 import svgr, { resolveConfig } from '@svgr/core';
+import templateF from './template';
 
 const glob = util.promisify(globCb);
 
@@ -28,21 +29,22 @@ function xmlnsSvgToXmlns(svgrOutput: string) {
   return svgrOutput.replace(/xmlns:svg=/gi, 'xmlns=');
 }
 
-function fixTsProps(svgrOutput: string) {
-  return svgrOutput
-    .replace(
-      /Svg, {\s*([\s\S]*)\s*} from/,
-      (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
-    )
-    .replace(/SvgComponent\(props/, 'SvgComponent(props: SvgProps');
-}
+// function fixTsProps(svgrOutput: string) {
+//   return svgrOutput
+//     .replace(
+//       /Svg, {\s*([\s\S]*)\s*} from/,
+//       (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
+//     )
+//     .replace(/SvgComponent\(props/, 'SvgComponent(props: SvgProps');
+// }
 
 function fixRenderingBugs(svgrOutput: string) {
-  return fixTsProps(xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput)));
+  return xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput));
 }
 
 const defaultsvgrConfig = {
   native: true,
+  template: templateF,
   plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx', '@svgr/plugin-prettier'],
   svgoConfig: {
     plugins: [
