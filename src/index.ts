@@ -8,7 +8,7 @@ import mkdirp from 'mkdirp';
 import camelCase from 'lodash.camelcase';
 import upperFirst from 'lodash.upperfirst';
 import svgr, { resolveConfig } from '@svgr/core';
-import templateF from './template';
+import gbTemplate from './template';
 
 const glob = util.promisify(globCb);
 
@@ -42,7 +42,7 @@ function fixRenderingBugs(svgrOutput: string) {
 
 const defaultsvgrConfig = {
   native: true,
-  template: templateF,
+  template: gbTemplate,
   plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx', '@svgr/plugin-prettier'],
   svgoConfig: {
     plugins: [
