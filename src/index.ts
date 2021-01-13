@@ -92,7 +92,7 @@ export interface GeneratorOptions {
 export default class ImageTransformer {
   indexes: { [key: string]: any } = { '': {} };
 
-  flatIndex?: { png: Array<any>; svg: Array<any> };
+  flatIndex?: { jpg: Array<any>; png: Array<any>; svg: Array<any> };
 
   svgPreamble = '';
 
@@ -102,11 +102,11 @@ export default class ImageTransformer {
       this.svgPreamble = noTsCheckSvgPreamble;
     }
     if (inlineRequire) {
-      this.flatIndex = { png: [], svg: [] };
+      this.flatIndex = { jpg: [], png: [], svg: [] };
     }
   }
 
-  addIndex(dir: string, name: string, type: 'svg' | 'png' | 'dir') {
+  addIndex(dir: string, name: string, type: 'svg' | 'png' | 'jpg' | 'dir') {
     if (type !== 'dir' && this.flatIndex) {
       this.flatIndex[type].push(dir === '.' ? name : `${dir}/${name}`);
     }
@@ -134,6 +134,8 @@ export default class ImageTransformer {
               return `export { default as ${name} } from './${name}';`;
             case 'dir':
               return `export * from './${name}';`;
+            case 'jpg':
+              return `export const ${safeName(name)} = require('./${name}.jpg');`;
             case 'png':
               return `export const ${safeName(name)} = require('./${name}.png');`;
           }
@@ -151,6 +153,7 @@ export default class ImageTransformer {
   }
 
   writeInlineRequireIndex(outputDirectory: string) {
+    const jpg = this.flatIndex!.jpg;
     const png = this.flatIndex!.png;
     const svg = this.flatIndex!.svg;
     const lines = [
@@ -163,7 +166,11 @@ export default class ImageTransformer {
       `export type Bitmaps = ${png
         .map((ln) => JSON.stringify(ln))
         .join(' |\n  ')
-        .trim()};`,
+        .trim()}${jpg.length > 0 ? ' | ' : ''}
+        ${jpg
+          .map((ln) => JSON.stringify(ln))
+          .join(' |\n  ')
+          .trim()};`,
     );
     lines.push('');
     lines.push(
@@ -179,6 +186,9 @@ export default class ImageTransformer {
       '  switch (name) {',
       png
         .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.png');`)
+        .join('\n'),
+      jpg
+        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.jpg');`)
         .join('\n'),
       '  }',
       '}',
@@ -218,7 +228,8 @@ export function getBitmaps(...names: Array<Bitmaps>) {
   async transform(inputDirectory: string, tsOutputDirectory: string, imageOutputDirectory: string) {
     await Promise.all([
       this.transformSvgs(inputDirectory, tsOutputDirectory),
-      this.transformPngs(inputDirectory, imageOutputDirectory),
+      this.transformImages('png', inputDirectory, imageOutputDirectory),
+      this.transformImages('jpg', inputDirectory, imageOutputDirectory),
     ]);
     if (this.flatIndex) {
       this.writeInlineRequireIndex(tsOutputDirectory);
@@ -244,8 +255,8 @@ export function getBitmaps(...names: Array<Bitmaps>) {
     });
   }
 
-  async transformPngs(inputDirectory: string, imageOutputDirectory: string) {
-    const files = await glob('**/*.png', { cwd: inputDirectory });
+  async transformImages(type: 'png' | 'jpg', inputDirectory: string, imageOutputDirectory: string) {
+    const files = await glob(`**/*.${type}`, { cwd: inputDirectory });
 
     await pmap(
       files,
@@ -254,8 +265,8 @@ export function getBitmaps(...names: Array<Bitmaps>) {
         const [baseName, dims] = file
           .substring(0, file.length - path.extname(file).length)
           .split('@');
-        const output3x = `${baseName}@3x.png`;
-        this.addIndex(path.dirname(file), path.basename(baseName), 'png');
+        const output3x = `${baseName}@3x.${type}`;
+        this.addIndex(path.dirname(file), path.basename(baseName), type);
         if (needsUpdate(inputFile, path.join(imageOutputDirectory, output3x))) {
           const sharpImage = sharp(inputFile);
           let { width, height } = await sharpImage.metadata();
@@ -275,11 +286,11 @@ export function getBitmaps(...names: Array<Bitmaps>) {
             sharpImage
               .clone()
               .resize({ width: (width! * 2) / 3, height: (height! * 2) / 3 })
-              .toFile(path.join(imageOutputDirectory, `${baseName}@2x.png`)),
+              .toFile(path.join(imageOutputDirectory, `${baseName}@2x.${type}`)),
             sharpImage
               .clone()
               .resize({ width: width! / 3, height: height! / 3 })
-              .toFile(path.join(imageOutputDirectory, `${baseName}.png`)),
+              .toFile(path.join(imageOutputDirectory, `${baseName}.${type}`)),
           ]);
         }
       },
