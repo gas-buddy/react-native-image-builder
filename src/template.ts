@@ -7,6 +7,14 @@ import {
   JSXIdentifier,
   JSXExpressionContainer,
   JSXFragment,
+  interfaceDeclaration,
+  identifier,
+  objectTypeAnnotation,
+  arrayTypeAnnotation,
+  objectTypeProperty,
+  stringLiteralTypeAnnotation,
+  stringTypeAnnotation,
+  genericTypeAnnotation,
 } from '@babel/types';
 
 interface templateType {
@@ -52,7 +60,7 @@ export default function gbTemplate(
       if (attr.value! && isFillStrokeOrStopColor(attr.name.name) && isHex(attr.value.value)) {
         colorArray.push(attr.value.value);
         attr.value.type = 'JSXExpressionContainer';
-        attr.value.expression = { type: 'Identifier', name: `colorValue[${coCount}]` };
+        attr.value.expression = { type: 'Identifier', name: `colors[${coCount}]` };
         coCount++;
       }
       return attr;
@@ -111,8 +119,20 @@ export default function gbTemplate(
     },
   ];
 
+  const propInterface = [
+    interfaceDeclaration(
+      identifier('componentPropsInterface'),
+      null,
+      [],
+      objectTypeAnnotation([
+        objectTypeProperty(identifier('colors'), arrayTypeAnnotation(stringTypeAnnotation())),
+        objectTypeProperty(identifier('props'), genericTypeAnnotation(identifier('SvgProps'))),
+      ]),
+    ),
+  ];
+
   const destructuredProps = props.map((item) => {
-    item.name = '{ colors = defaultColors, ...props }: { colors: Array<string>; props: SvgProps }';
+    item.name = '{ colors = defaultColors, ...props }: componentPropsInterface';
     return item;
   });
 
@@ -121,6 +141,8 @@ export default function gbTemplate(
     ${interfaces}
 
     ${defaultColorsJsx}
+
+    ${propInterface}
 
     function ${componentName} (${destructuredProps}) {
         return ${finalJsx};
