@@ -12,7 +12,6 @@ import {
   objectTypeAnnotation,
   arrayTypeAnnotation,
   objectTypeProperty,
-  stringLiteralTypeAnnotation,
   stringTypeAnnotation,
   genericTypeAnnotation,
 } from '@babel/types';
