@@ -1,5 +1,5 @@
 interface SvgrSync {
-  sync(src: string, config?: any): string;
+  sync(_src: string, _config?: any): string;
 }
 
 declare module '@svgr/core' {

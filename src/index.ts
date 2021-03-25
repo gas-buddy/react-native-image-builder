@@ -158,6 +158,7 @@ export default class ImageTransformer {
     const svg = this.flatIndex!.svg;
     const lines = [
       '/* eslint-disable prettier/prettier, quotes */',
+      '/* global JSX */',
       "import { SvgProps } from 'react-native-svg';",
       "import { ImageSourcePropType } from 'react-native';",
       '',
@@ -197,7 +198,7 @@ export default class ImageTransformer {
 
     lines.push(
       '',
-      'export function getVector(name: Vectors): ((props: SvgProps) => JSX.Element) {',
+      'export function getVector(name: Vectors): ((_: SvgProps) => JSX.Element) {',
       '  switch (name) {',
       svg
         .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}').default;`)
@@ -227,7 +228,7 @@ export function getBitmaps(...names: Array<Bitmaps>) {
 
   async transform(inputDirectory: string, tsOutputDirectory: string, imageOutputDirectory: string) {
     await Promise.all([
-      this.transformSvgs(inputDirectory, tsOutputDirectory),
+      this.transformSvgs(inputDirectory, tsOutputDirectory, imageOutputDirectory),
       this.transformImages('png', inputDirectory, imageOutputDirectory),
       this.transformImages('jpg', inputDirectory, imageOutputDirectory),
     ]);
@@ -238,21 +239,61 @@ export function getBitmaps(...names: Array<Bitmaps>) {
     }
   }
 
-  async transformSvgs(inputDirectory: string, outputDirectory: string) {
+  async transformSvgs(
+    inputDirectory: string,
+    outputDirectory: string,
+    imageOutputDirectory: string,
+  ) {
     const svgs = await glob('**/*.svg?(x)', { cwd: inputDirectory });
-    svgs.forEach((file) => {
-      const inputFile = path.join(inputDirectory, file);
-      const outputFile = path.join(outputDirectory, file).replace(/.svgx?$/, '.tsx');
-      const outDir = path.dirname(outputFile);
-      const relOutput = path.relative(outputDirectory, outDir);
-      this.addIndex(relOutput, path.basename(outputFile).replace(/.tsx$/, ''), 'svg');
-      if (needsUpdate(inputFile, outputFile)) {
-        console.log('Generating JS from SVG', file);
-        const code = transformSvg(inputFile);
-        mkdirp.sync(outDir);
-        fs.writeFileSync(outputFile, `${this.svgPreamble}${code}`, 'utf8');
-      }
-    });
+    await pmap(
+      svgs,
+      async (file) => {
+        const inputFile = path.join(inputDirectory, file);
+        const dimMatch = file.match(/(.*)@(\d+)x(\d+)\.svg/i);
+        let destFile = file;
+
+        if (dimMatch) {
+          destFile = `${dimMatch[1]}.svg`;
+          const pngBaseName = dimMatch[1];
+          const width = Number(dimMatch[2]);
+          const height = Number(dimMatch[3]);
+
+          console.log('Generating PNGs from SVG', file, inputFile);
+          const svgInput = fs.readFileSync(inputFile);
+          const image = sharp(svgInput);
+          const metadata = await image.metadata();
+          const fullResImage = await sharp(svgInput, { density: metadata.density! * 3 });
+          this.addIndex(path.dirname(file), path.basename(dimMatch[1]), 'png');
+          mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
+          await Promise.all([
+            fullResImage
+              .clone()
+              .resize({ width, height })
+              .toFile(path.join(imageOutputDirectory, `${pngBaseName}.png`)),
+            fullResImage
+              .clone()
+              .resize({ width: width * 2, height: height * 2 })
+              .toFile(path.join(imageOutputDirectory, `${pngBaseName}@2x.png`)),
+            fullResImage
+              .clone()
+              .resize({ width: width * 3, height: height * 3 })
+              .toFile(path.join(imageOutputDirectory, `${pngBaseName}@3x.png`)),
+          ]);
+        }
+
+        const outputFile = path.join(outputDirectory, destFile).replace(/.svgx?$/, '.tsx');
+        const outDir = path.dirname(outputFile);
+        const relOutput = path.relative(outputDirectory, outDir);
+        this.addIndex(relOutput, path.basename(outputFile).replace(/.tsx$/, ''), 'svg');
+        if (needsUpdate(inputFile, outputFile)) {
+          console.log('Generating JS from SVG', file);
+          const code = transformSvg(inputFile);
+          mkdirp.sync(outDir);
+          fs.writeFileSync(outputFile, `${this.svgPreamble}${code}`, 'utf8');
+        }
+      },
+      { concurrency: 5 },
+    );
   }
 
   async transformImages(type: 'png' | 'jpg', inputDirectory: string, imageOutputDirectory: string) {
