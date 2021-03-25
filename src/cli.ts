@@ -17,6 +17,7 @@ assert(imageOutputDirectory, usage);
 
 const imageTransformer = new ImageTransformer({
   disableTsCheck: argv['disable-ts-check'],
+  inlineRequire: argv['inline-require'],
 });
 
 imageTransformer.transform(imageDirectory, tsOutputDirectory, imageOutputDirectory);
