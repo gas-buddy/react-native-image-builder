@@ -159,6 +159,7 @@ export default class ImageTransformer {
     const lines = [
       '/* eslint-disable prettier/prettier, quotes */',
       '/* global JSX */',
+      "import { useMemo } from 'react';",
       "import { SvgProps } from 'react-native-svg';",
       "import { ImageSourcePropType } from 'react-native';",
       '',
@@ -215,6 +216,22 @@ export function getVectors(...names: Array<Vectors>) {
 
 export function getBitmaps(...names: Array<Bitmaps>) {
   return names.map(getBitmap);
+}
+
+export function useVector(name: Vectors) {
+  return useMemo(() => getVector(name), [name]);
+}
+
+export function useVectors(...names: Array<Vectors>) {
+  return useMemo(() => names.map(getVector), [names]);
+}
+
+export function useBitmap(name: Bitmaps) {
+  return useMemo(() => getBitmap(name), [name]);
+}
+
+export function useBitmaps(...names: Array<Bitmaps>) {
+  return useMemo(() => names.map(getBitmap), [names]);
 }
 `);
 
