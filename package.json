@@ -31,26 +31,26 @@
   "author": "GasBuddy",
   "license": "MIT",
   "devDependencies": {
-    "@babel/parser": "^7.15.7",
-    "@babel/types": "^7.15.6",
+    "@babel/parser": "^7.16.7",
+    "@babel/types": "^7.16.7",
     "@react-native-community/eslint-config": "^3.0.1",
     "@types/babel__template": "^7.4.1",
-    "@types/glob": "^7.1.4",
+    "@types/glob": "^7.2.0",
     "@types/lodash.camelcase": "^4.3.6",
     "@types/lodash.upperfirst": "^4.3.6",
     "@types/minimist": "^1.2.2",
     "@types/mkdirp": "^1.0.2",
-    "@types/node": "^16.10.1",
+    "@types/node": "^16.11.19",
     "@types/rimraf": "^3.0.2",
-    "@types/sharp": "^0.29.2",
+    "@types/sharp": "^0.29.5",
     "@types/tap": "^14.10.3",
-    "@typescript-eslint/parser": "^4.32.0",
+    "@typescript-eslint/parser": "^4.33.0",
     "cross-env": "^7.0.3",
     "dir-compare": "^3.3.0",
     "eslint": "^7.32.0",
     "rimraf": "^3.0.2",
     "tap": "^14.11.0",
-    "typescript": "^4.4.3"
+    "typescript": "^4.5.4"
   },
   "nyc": {
     "lines": 75,
@@ -75,6 +75,6 @@
     "minimist": "^1.2.5",
     "mkdirp": "^1.0.4",
     "p-map": "^4.0.0",
-    "sharp": "^0.29.1"
+    "sharp": "^0.29.3"
   }
 }
