@@ -170,14 +170,14 @@ export default class ImageTransformer {
         .join(' |\n  ')
         .trim()}${jpg.length > 0 ? ' | ' : ''}
         ${jpg
-          .map((ln) => JSON.stringify(ln))
+          .map((ln) => JSON.stringify(ln.replace('\\', '/')))
           .join(' |\n  ')
           .trim()};`,
     );
     lines.push('');
     lines.push(
       `export type Vectors = ${svg
-        .map((ln) => JSON.stringify(ln))
+        .map((ln) => JSON.stringify(ln.replace('\\', '/')))
         .join(' |\n  ')
         .trim()};`,
     );
