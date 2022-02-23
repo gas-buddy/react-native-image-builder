@@ -40,6 +40,10 @@ function fixRenderingBugs(svgrOutput: string) {
   return adjustSvgPropImport(xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput)));
 }
 
+function platformIndependentName(f) {
+  return f.replace('\\', '/');
+}
+
 const defaultsvgrConfig = {
   native: true,
   template: gbTemplate,
@@ -170,14 +174,14 @@ export default class ImageTransformer {
         .join(' |\n  ')
         .trim()}${jpg.length > 0 ? ' | ' : ''}
         ${jpg
-          .map((ln) => JSON.stringify(ln.replace('\\', '/')))
+          .map((ln) => JSON.stringify(platformIndependentName(ln)))
           .join(' |\n  ')
           .trim()};`,
     );
     lines.push('');
     lines.push(
       `export type Vectors = ${svg
-        .map((ln) => JSON.stringify(ln.replace('\\', '/')))
+        .map((ln) => JSON.stringify(platformIndependentName(ln.replace)))
         .join(' |\n  ')
         .trim()};`,
     );
@@ -187,10 +191,20 @@ export default class ImageTransformer {
       'export function getBitmap(name: Bitmaps): ImageSourcePropType {',
       '  switch (name) {',
       png
-        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.png');`)
+        .map(
+          (ln) =>
+            `    case ${JSON.stringify(
+              platformIndependentName(ln),
+            )}:\n      return require('./${ln}.png');`,
+        )
         .join('\n'),
       jpg
-        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}.jpg');`)
+        .map(
+          (ln) =>
+            `    case ${JSON.stringify(
+              platformIndependentName(ln),
+            )}:\n      return require('./${ln}.jpg');`,
+        )
         .join('\n'),
       '  }',
       '}',
@@ -202,7 +216,12 @@ export default class ImageTransformer {
       'export function getVector(name: Vectors): ((_: SvgProps) => JSX.Element) {',
       '  switch (name) {',
       svg
-        .map((ln) => `    case ${JSON.stringify(ln)}:\n      return require('./${ln}').default;`)
+        .map(
+          (ln) =>
+            `    case ${JSON.stringify(
+              platformIndependentName(ln),
+            )}:\n      return require('./${ln}').default;`,
+        )
         .join('\n'),
       '  }',
       '}',
