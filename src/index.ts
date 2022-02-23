@@ -181,7 +181,7 @@ export default class ImageTransformer {
     lines.push('');
     lines.push(
       `export type Vectors = ${svg
-        .map((ln) => JSON.stringify(platformIndependentName(ln.replace)))
+        .map((ln) => JSON.stringify(platformIndependentName(ln)))
         .join(' |\n  ')
         .trim()};`,
     );
