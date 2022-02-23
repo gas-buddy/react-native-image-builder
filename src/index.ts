@@ -195,7 +195,7 @@ export default class ImageTransformer {
           (ln) =>
             `    case ${JSON.stringify(
               platformIndependentName(ln),
-            )}:\n      return require('./${ln}.png');`,
+            )}:\n      return require('./${platformIndependentName(ln)}.png');`,
         )
         .join('\n'),
       jpg
@@ -203,7 +203,7 @@ export default class ImageTransformer {
           (ln) =>
             `    case ${JSON.stringify(
               platformIndependentName(ln),
-            )}:\n      return require('./${ln}.jpg');`,
+            )}:\n      return require('./${platformIndependentName(ln)}.jpg');`,
         )
         .join('\n'),
       '  }',
@@ -220,7 +220,7 @@ export default class ImageTransformer {
           (ln) =>
             `    case ${JSON.stringify(
               platformIndependentName(ln),
-            )}:\n      return require('./${ln}').default;`,
+            )}:\n      return require('./${platformIndependentName(ln)}').default;`,
         )
         .join('\n'),
       '  }',
