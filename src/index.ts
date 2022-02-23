@@ -40,7 +40,7 @@ function fixRenderingBugs(svgrOutput: string) {
   return adjustSvgPropImport(xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput)));
 }
 
-function platformIndependentName(f) {
+function platformIndependentName(f: string) {
   return f.replace('\\', '/');
 }
 
