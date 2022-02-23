@@ -1,18 +1,22 @@
 {
   "name": "react-native-image-builder",
-  "version": "1.8.0",
+  "version": "2.0.0",
   "description": "Type safe code generation for images targeted at React Native",
-  "main": "build/index.js",
+  "exports": "./build/index.js",
   "bin": "build/cli.js",
   "types": "build/index",
+  "type": "module",
   "files": [
     "build"
   ],
+  "engines": {
+    "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+  },
   "scripts": {
     "clean-build": "yarn run clean && yarn run build",
     "clean": "rm -rf ./build",
     "build": "tsc -p tsconfig.json",
-    "test": "tap --no-coverage tests/*.ts",
+    "test": "tap --ts --no-coverage tests/*.ts",
     "cover": "nyc --reporter=lcov npm test",
     "lint": "eslint .",
     "prepublishOnly": "npm run build"
@@ -34,22 +38,26 @@
     "@babel/parser": "^7.16.7",
     "@babel/types": "^7.16.7",
     "@react-native-community/eslint-config": "^3.0.1",
+    "@types/babel__core": "^7.1.18",
     "@types/babel__template": "^7.4.1",
     "@types/glob": "^7.2.0",
     "@types/lodash.camelcase": "^4.3.6",
     "@types/lodash.upperfirst": "^4.3.6",
     "@types/minimist": "^1.2.2",
     "@types/mkdirp": "^1.0.2",
-    "@types/node": "^16.11.19",
+    "@types/node": "^17.0.8",
+    "@types/prettier": "^2.4.2",
     "@types/rimraf": "^3.0.2",
     "@types/sharp": "^0.29.5",
-    "@types/tap": "^14.10.3",
+    "@types/svgo": "^2.6.0",
+    "@types/tap": "^15.0.5",
     "@typescript-eslint/parser": "^5.9.0",
     "cross-env": "^7.0.3",
     "dir-compare": "^4.0.0",
     "eslint": "^7.32.0",
     "rimraf": "^3.0.2",
-    "tap": "^14.11.0",
+    "tap": "^15.1.6",
+    "ts-node": "^10.4.0",
     "typescript": "^4.5.4"
   },
   "nyc": {
@@ -66,9 +74,9 @@
     ]
   },
   "dependencies": {
-    "@svgr/core": "^5.5.0",
-    "@svgr/plugin-prettier": "^5.5.0",
-    "@svgr/plugin-svgo": "^5.5.0",
+    "@svgr/core": "^6.1.2",
+    "@svgr/plugin-prettier": "^6.1.2",
+    "@svgr/plugin-svgo": "^6.1.2",
     "glob": "^7.2.0",
     "lodash.camelcase": "^4.3.0",
     "lodash.upperfirst": "^4.3.1",

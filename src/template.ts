@@ -1,5 +1,4 @@
-import { smart, statement, statements, expression, program } from 'babel__template';
-import { ParserPlugin } from '@babel/parser';
+import { Config } from '@svgr/core';
 import {
   JSXElement,
   JSXText,
@@ -16,35 +15,10 @@ import {
   genericTypeAnnotation,
 } from '@babel/types';
 
-interface templateType {
-  smart: typeof smart;
-  statement: typeof statement;
-  statements: typeof statements;
-  expressions: typeof expression;
-  program: typeof program;
-  ast: typeof smart.ast;
-}
-
-interface astPartsType {
-  imports: string;
-  interfaces: string;
-  componentName: string;
-  props: Array<any>;
-  jsx: string;
-  exports: string;
-}
-
-export default function gbTemplate(
-  { template }: { template: templateType },
-  opts: { typescript: object },
-  { imports, interfaces, componentName, props, jsx, exports }: astPartsType,
-) {
-  const plugins: ParserPlugin[] = ['jsx'];
-
-  if (opts.typescript) {
-    plugins.push('typescript');
-  }
-
+const gbTemplateFn: Config['template'] = (
+  { imports, interfaces, componentName, props, jsx, exports },
+  { tpl: template },
+) => {
   const hexRegex = RegExp('^#(?:[0-9a-fA-F]{3}){1,2}$');
 
   const isHex = (value: string) => hexRegex.test(value);
@@ -106,7 +80,7 @@ export default function gbTemplate(
           type: 'VariableDeclarator',
           id: {
             type: 'Identifier',
-            name: 'defaultColors',
+            name: 'DEFAULT_COLORS',
           },
           init: {
             type: 'ArrayExpression',
@@ -120,7 +94,7 @@ export default function gbTemplate(
 
   const propInterface = [
     interfaceDeclaration(
-      identifier('componentPropsInterface'),
+      identifier('SvgPropsWithColor'),
       null,
       [],
       objectTypeAnnotation([
@@ -131,12 +105,23 @@ export default function gbTemplate(
   ];
 
   const destructuredProps = props.map((item) => {
-    item.name = '{ colors = defaultColors, ...props }: componentPropsInterface';
+    if (item.type === 'Identifier' && item.name === 'props') {
+      (item as any).typeAnnotation = {
+        type: 'TSTypeAnnotation',
+        typeAnnotation: {
+          type: 'TSTypeReference',
+          typeName: {
+            type: 'Identifier',
+            name: 'SvgPropsWithColor',
+          },
+        },
+      };
+      item.name = '{ colors = DEFAULT_COLORS, ...props }';
+    }
     return item;
   });
 
-  const typeScriptTpl = template.smart({ plugins });
-  return typeScriptTpl.ast`${imports}
+  return template`${imports}
     ${interfaces}
 
     ${defaultColorsJsx}
@@ -148,4 +133,6 @@ export default function gbTemplate(
     }
     ${exports}
     `;
-}
+};
+
+export default gbTemplateFn;

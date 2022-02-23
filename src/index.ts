@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import mkdirp from 'mkdirp';
 import camelCase from 'lodash.camelcase';
 import upperFirst from 'lodash.upperfirst';
-import svgr, { resolveConfig } from '@svgr/core';
+import { Config, resolveConfig, transform } from '@svgr/core';
 import gbTemplate from './template';
 
 const glob = util.promisify(globCb);
@@ -29,36 +29,30 @@ function xmlnsSvgToXmlns(svgrOutput: string) {
   return svgrOutput.replace(/xmlns:svg=/gi, 'xmlns=');
 }
 
-function adjustSvgPropImport(svgrOutput: string) {
-  return svgrOutput.replace(
-    /Svg, {\s*([\s\S]*)\s*} from/,
-    (match, dollar1) => `Svg, { SvgProps, ${dollar1.trim()} } from`,
-  );
-}
-
 function fixRenderingBugs(svgrOutput: string) {
-  return adjustSvgPropImport(xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput)));
+  return xmlnsSvgToXmlns(xlinkHrefToHref(svgrOutput));
 }
 
-const defaultsvgrConfig = {
+const defaultsvgrConfig: Config = {
   native: true,
+  typescript: true,
+  svgo: true,
   template: gbTemplate,
   plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx', '@svgr/plugin-prettier'],
   svgoConfig: {
     plugins: [
       {
-        inlineStyles: {
-          onlyMatchedOnce: false,
+        name: 'preset-default',
+        params: {
+          overrides: {
+            convertColors: false,
+            removeUnknownsAndDefaults: false,
+            removeViewBox: false,
+            inlineStyles: {
+              onlyMatchedOnce: false,
+            },
+          },
         },
-      },
-      {
-        removeViewBox: false,
-      },
-      {
-        removeUnknownsAndDefaults: false,
-      },
-      {
-        convertColors: false,
       },
     ],
   },
@@ -76,7 +70,7 @@ function needsUpdate(infile: string, outfile: string) {
 function transformSvg(filename: string) {
   const config = resolveConfig.sync(path.dirname(filename));
   var svgrConfig = config ? Object.assign({}, defaultsvgrConfig, config) : defaultsvgrConfig;
-  const jsCode = svgr.sync(fs.readFileSync(filename, 'utf8'), svgrConfig);
+  const jsCode = transform.sync(fs.readFileSync(filename, 'utf8'), svgrConfig);
   return fixRenderingBugs(jsCode);
 }
 
