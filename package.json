@@ -2,17 +2,21 @@
   "name": "react-native-image-builder",
   "version": "2.0.0",
   "description": "Type safe code generation for images targeted at React Native",
-  "main": "build/index.js",
+  "exports": "./build/index.js",
   "bin": "build/cli.js",
   "types": "build/index",
+  "type": "module",
   "files": [
     "build"
   ],
+  "engines": {
+    "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+  },
   "scripts": {
     "clean-build": "yarn run clean && yarn run build",
     "clean": "rm -rf ./build",
     "build": "tsc -p tsconfig.json",
-    "test": "tap --no-coverage tests/*.ts",
+    "test": "tap --ts --no-coverage tests/*.ts",
     "cover": "nyc --reporter=lcov npm test",
     "lint": "eslint .",
     "prepublishOnly": "npm run build"
@@ -46,13 +50,14 @@
     "@types/rimraf": "^3.0.2",
     "@types/sharp": "^0.29.5",
     "@types/svgo": "^2.6.0",
-    "@types/tap": "^14.10.3",
+    "@types/tap": "^15.0.5",
     "@typescript-eslint/parser": "^5.9.0",
     "cross-env": "^7.0.3",
     "dir-compare": "^4.0.0",
     "eslint": "^7.32.0",
     "rimraf": "^3.0.2",
-    "tap": "^14.11.0",
+    "tap": "^15.1.6",
+    "ts-node": "^10.4.0",
     "typescript": "^4.5.4"
   },
   "nyc": {

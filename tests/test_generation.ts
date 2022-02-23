@@ -2,7 +2,7 @@ import tap from 'tap';
 import path from 'path';
 import rimraf from 'rimraf';
 import { compareSync } from 'dir-compare';
-import Generator from '../src/index';
+import Generator from '../build/index.js';
 
 tap.test('test_generation', (t) => {
   const tsOutputDir = path.resolve(__dirname, './output/src/');
