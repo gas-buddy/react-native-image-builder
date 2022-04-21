@@ -185,6 +185,12 @@ export default class ImageTransformer {
         .join(' |\n  ')
         .trim()};`,
     );
+    lines.push(
+      '',
+      'export interface SvgPropsWithColor extends SvgProps {',
+      '  colors?: string[];',
+      '}',
+    );
 
     lines.push(
       '',
@@ -213,7 +219,7 @@ export default class ImageTransformer {
 
     lines.push(
       '',
-      'export function getVector(name: Vectors): ((_: SvgProps) => JSX.Element) {',
+      'export function getVector(name: Vectors): ((_: SvgPropsWithColor) => JSX.Element) {',
       '  switch (name) {',
       svg
         .map(
@@ -294,27 +300,33 @@ export function useBitmaps(...names: Array<Bitmaps>) {
           const width = Number(dimMatch[2]);
           const height = Number(dimMatch[3]);
 
-          console.log('Generating PNGs from SVG', file, inputFile);
-          const svgInput = fs.readFileSync(inputFile);
-          const image = sharp(svgInput);
-          const metadata = await image.metadata();
-          const fullResImage = await sharp(svgInput, { density: metadata.density! * 3 });
-          this.addIndex(path.dirname(file), path.basename(dimMatch[1]), 'png');
-          mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
-          await Promise.all([
-            fullResImage
-              .clone()
-              .resize({ width, height })
-              .toFile(path.join(imageOutputDirectory, `${pngBaseName}.png`)),
-            fullResImage
-              .clone()
-              .resize({ width: width * 2, height: height * 2 })
-              .toFile(path.join(imageOutputDirectory, `${pngBaseName}@2x.png`)),
-            fullResImage
-              .clone()
-              .resize({ width: width * 3, height: height * 3 })
-              .toFile(path.join(imageOutputDirectory, `${pngBaseName}@3x.png`)),
-          ]);
+          if (
+            needsUpdate(inputFile, path.join(imageOutputDirectory, `${pngBaseName}.png`)) ||
+            needsUpdate(inputFile, path.join(imageOutputDirectory, `${pngBaseName}@2x.png`)) ||
+            needsUpdate(inputFile, path.join(imageOutputDirectory, `${pngBaseName}@3x.png`))
+          ) {
+            console.log('Generating PNGs from SVG', file, inputFile);
+            const svgInput = fs.readFileSync(inputFile);
+            const image = sharp(svgInput);
+            const metadata = await image.metadata();
+            const fullResImage = await sharp(svgInput, { density: metadata.density! * 3 });
+            this.addIndex(path.dirname(file), path.basename(dimMatch[1]), 'png');
+            mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
+            await Promise.all([
+              fullResImage
+                .clone()
+                .resize({ width, height })
+                .toFile(path.join(imageOutputDirectory, `${pngBaseName}.png`)),
+              fullResImage
+                .clone()
+                .resize({ width: width * 2, height: height * 2 })
+                .toFile(path.join(imageOutputDirectory, `${pngBaseName}@2x.png`)),
+              fullResImage
+                .clone()
+                .resize({ width: width * 3, height: height * 3 })
+                .toFile(path.join(imageOutputDirectory, `${pngBaseName}@3x.png`)),
+            ]);
+          }
         }
 
         const outputFile = path.join(outputDirectory, destFile).replace(/.svgx?$/, '.tsx');

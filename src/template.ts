@@ -13,7 +13,7 @@ import {
   arrayTypeAnnotation,
   objectTypeProperty,
   stringTypeAnnotation,
-  genericTypeAnnotation,
+  interfaceExtends,
 } from '@babel/types';
 
 interface templateType {
@@ -120,18 +120,17 @@ export default function gbTemplate(
 
   const propInterface = [
     interfaceDeclaration(
-      identifier('componentPropsInterface'),
+      identifier('SvgPropsWithColor'),
       null,
-      [],
+      [interfaceExtends(identifier('SvgProps'))],
       objectTypeAnnotation([
-        objectTypeProperty(identifier('colors'), arrayTypeAnnotation(stringTypeAnnotation())),
-        objectTypeProperty(identifier('props'), genericTypeAnnotation(identifier('SvgProps'))),
+        objectTypeProperty(identifier('colors?'), arrayTypeAnnotation(stringTypeAnnotation())),
       ]),
     ),
   ];
 
   const destructuredProps = props.map((item) => {
-    item.name = '{ colors = defaultColors, ...props }: componentPropsInterface';
+    item.name = '{ colors = defaultColors, ...props }: SvgPropsWithColor';
     return item;
   });
 

@@ -12,6 +12,10 @@ export type Bitmaps = "filters-all" |
 export type Vectors = "icon/trophy" |
   "icon/makemeanimage";
 
+export interface SvgPropsWithColor extends SvgProps {
+  colors?: string[];
+}
+
 export function getBitmap(name: Bitmaps): ImageSourcePropType {
   switch (name) {
     case "filters-all":
@@ -25,7 +29,7 @@ export function getBitmap(name: Bitmaps): ImageSourcePropType {
 }
 
 
-export function getVector(name: Vectors): ((_: SvgProps) => JSX.Element) {
+export function getVector(name: Vectors): ((_: SvgPropsWithColor) => JSX.Element) {
   switch (name) {
     case "icon/trophy":
       return require('./icon/trophy').default;
