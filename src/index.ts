@@ -326,6 +326,8 @@ export function useBitmaps(...names: Array<Bitmaps>) {
                 .resize({ width: width * 3, height: height * 3 })
                 .toFile(path.join(imageOutputDirectory, `${pngBaseName}@3x.png`)),
             ]);
+          } else {
+            this.addIndex(path.dirname(file), path.basename(dimMatch[1]), 'png');
           }
         }
 
