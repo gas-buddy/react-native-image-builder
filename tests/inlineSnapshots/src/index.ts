@@ -29,6 +29,13 @@ export function getBitmap(name: Bitmaps): ImageSourcePropType {
 }
 
 
+export const ImageSizes = {
+  "filters-all": [24, 24],
+  "icon/makemeanimage": [22, 25],
+  "icon/thirdlevel/cats": [100, 100],
+};
+
+
 export function getVector(name: Vectors): ((_: SvgPropsWithColor) => JSX.Element) {
   switch (name) {
     case "icon/trophy":

@@ -15,6 +15,17 @@ const glob = util.promisify(globCb);
 const jsHeader = '/* THIS IS AN AUTO-GENERATED FILE BY util/build-images.js - DO NOT EDIT */\n';
 const noTsCheckSvgPreamble = '// @ts-nocheck\n';
 
+const pngOptions = {
+  compressionLevel: 9,
+  palette: true,
+  effort: 10,
+};
+
+const jpgOptions = {
+  effort: 10,
+  reoptimize: true,
+};
+
 // Portions from https://github.com/kristerkari/react-native-svg-transformer/blob/master/index.js
 
 // xlink:href is supported in react-native-svg
@@ -88,6 +99,22 @@ function safeName(name: string) {
   return upperFirst(camelCase(name));
 }
 
+async function resizeOriginal(
+  sharpImage: ReturnType<typeof sharp>,
+  width: number,
+  height: number,
+  originalWidth: number,
+  originalHeight: number,
+  originalSize: number,
+) {
+  const resized = sharpImage.clone().resize({ width, height });
+  const newSize = (await resized.png(pngOptions).toBuffer()).length;
+  if (originalWidth === width && originalHeight === height && newSize > originalSize) {
+    return sharpImage;
+  }
+  return resized;
+}
+
 export interface GeneratorOptions {
   disableTsCheck?: boolean;
   inlineRequire?: boolean;
@@ -97,6 +124,8 @@ export default class ImageTransformer {
   indexes: { [key: string]: any } = { '': {} };
 
   flatIndex?: { jpg: Array<any>; png: Array<any>; svg: Array<any> };
+
+  imageSizes: Record<string, [number, number]> = {};
 
   svgPreamble = '';
 
@@ -139,9 +168,11 @@ export default class ImageTransformer {
             case 'dir':
               return `export * from './${name}';`;
             case 'jpg':
-              return `export const ${safeName(name)} = require('./${name}.jpg');`;
+              return `export const ${safeName(name)} = require('./${name}.jpg');
+export const ${safeName(name)}$size = [${this.imageSizes[name].join(', ')}];`;
             case 'png':
-              return `export const ${safeName(name)} = require('./${name}.png');`;
+              return `export const ${safeName(name)} = require('./${name}.png');
+export const ${safeName(name)}$size = [${this.imageSizes[name].join(', ')}];`;
           }
           return '';
         })
@@ -214,6 +245,16 @@ export default class ImageTransformer {
         .join('\n'),
       '  }',
       '}',
+      '',
+    );
+
+    lines.push(
+      '',
+      'export const ImageSizes = {',
+      ...Object.entries(this.imageSizes)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([n, v]) => `  ${JSON.stringify(n)}: [${v.join(', ')}],`),
+      '};',
       '',
     );
 
@@ -311,19 +352,26 @@ export function useBitmaps(...names: Array<Bitmaps>) {
             const metadata = await image.metadata();
             const fullResImage = await sharp(svgInput, { density: metadata.density! * 3 });
             this.addIndex(path.dirname(file), path.basename(dimMatch[1]), 'png');
+            this.imageSizes[this.flatIndex ? dimMatch[1] : path.basename(dimMatch[1])] = [
+              width,
+              height,
+            ];
             mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
             await Promise.all([
               fullResImage
                 .clone()
                 .resize({ width, height })
+                .png(pngOptions)
                 .toFile(path.join(imageOutputDirectory, `${pngBaseName}.png`)),
               fullResImage
                 .clone()
                 .resize({ width: width * 2, height: height * 2 })
+                .png(pngOptions)
                 .toFile(path.join(imageOutputDirectory, `${pngBaseName}@2x.png`)),
               fullResImage
                 .clone()
                 .resize({ width: width * 3, height: height * 3 })
+                .png(pngOptions)
                 .toFile(path.join(imageOutputDirectory, `${pngBaseName}@3x.png`)),
             ]);
           } else {
@@ -358,29 +406,47 @@ export function useBitmaps(...names: Array<Bitmaps>) {
           .split('@');
         const output3x = `${baseName}@3x.${type}`;
         this.addIndex(path.dirname(file), path.basename(baseName), type);
+
+        const sharpImage = sharp(inputFile);
+        let { width, height } = await sharpImage.metadata();
+        const [originalWidth, originalHeight] = [width, height];
+        if (dims && dims.indexOf('x') > 0) {
+          [width, height] = dims.split('x').map((n) => Number(n));
+        }
+        this.imageSizes[this.flatIndex ? baseName : path.basename(baseName)] = [
+          width! / 3,
+          height! / 3,
+        ];
+
         if (needsUpdate(inputFile, path.join(imageOutputDirectory, output3x))) {
-          const sharpImage = sharp(inputFile);
-          let { width, height } = await sharpImage.metadata();
-          if (dims && dims.indexOf('x') > 0) {
-            [width, height] = dims.split('x').map((n) => Number(n));
-          }
+          const size = fs.statSync(inputFile).size;
           if (width! % 3 || height! % 3 || (height! * 2) % 3 || (width! * 2) % 3) {
             console.error(`${file} dimensions cannot be properly scaled to 1/3rd and 2/3rd size`);
           }
           mkdirp.sync(path.dirname(path.join(imageOutputDirectory, file)));
           console.log('Preparing image', file);
           await Promise.all([
-            sharpImage
-              .clone()
-              .resize({ width, height })
-              .toFile(path.join(imageOutputDirectory, output3x)),
+            resizeOriginal(
+              sharpImage,
+              width!,
+              height!,
+              originalWidth!,
+              originalHeight!,
+              size!,
+            ).then((sharpResized) =>
+              sharpResized[type === 'png' ? 'png' : 'jpeg'](
+                type === 'png' ? pngOptions : jpgOptions,
+              ).toFile(path.join(imageOutputDirectory, output3x)),
+            ),
             sharpImage
               .clone()
               .resize({ width: (width! * 2) / 3, height: (height! * 2) / 3 })
+              [type === 'png' ? 'png' : 'jpeg'](type === 'png' ? pngOptions : jpgOptions)
               .toFile(path.join(imageOutputDirectory, `${baseName}@2x.${type}`)),
             sharpImage
               .clone()
               .resize({ width: width! / 3, height: height! / 3 })
+              [type === 'png' ? 'png' : 'jpeg'](type === 'png' ? pngOptions : jpgOptions)
               .toFile(path.join(imageOutputDirectory, `${baseName}.${type}`)),
           ]);
         }
