@@ -59,6 +59,7 @@ const defaultsvgrConfig = {
   native: true,
   template: gbTemplate,
   plugins: ['@svgr/plugin-svgo', '@svgr/plugin-jsx', '@svgr/plugin-prettier'],
+  colorMap: {},
   svgoConfig: {
     plugins: [
       {
@@ -90,7 +91,11 @@ function needsUpdate(infile: string, outfile: string) {
 
 function transformSvg(filename: string) {
   const config = resolveConfig.sync(path.dirname(filename));
-  var svgrConfig = config ? Object.assign({}, defaultsvgrConfig, config) : defaultsvgrConfig;
+  var svgrConfig = Object.assign({}, defaultsvgrConfig, config);
+  if (fs.existsSync(`${filename}.colors.json`)) {
+    const colorMap = JSON.parse(fs.readFileSync(`${filename}.colors.json`, 'utf8'));
+    (svgrConfig as any).colorMap = colorMap;
+  }
   const jsCode = svgr.sync(fs.readFileSync(filename, 'utf8'), svgrConfig);
   return fixRenderingBugs(jsCode);
 }

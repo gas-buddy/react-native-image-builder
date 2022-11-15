@@ -1,20 +1,6 @@
+import * as T from '@babel/types';
 import { smart, statement, statements, expression, program } from 'babel__template';
 import { ParserPlugin } from '@babel/parser';
-import {
-  JSXElement,
-  JSXText,
-  JSXSpreadChild,
-  JSXIdentifier,
-  JSXExpressionContainer,
-  JSXFragment,
-  interfaceDeclaration,
-  identifier,
-  objectTypeAnnotation,
-  arrayTypeAnnotation,
-  objectTypeProperty,
-  stringTypeAnnotation,
-  interfaceExtends,
-} from '@babel/types';
 
 interface templateType {
   smart: typeof smart;
@@ -36,11 +22,10 @@ interface astPartsType {
 
 export default function gbTemplate(
   { template }: { template: templateType },
-  opts: { typescript: object },
+  opts: { typescript: object; colorMap?: Record<string, Record<string, string>> },
   { imports, interfaces, componentName, props, jsx, exports }: astPartsType,
 ) {
   const plugins: ParserPlugin[] = ['jsx'];
-
   if (opts.typescript) {
     plugins.push('typescript');
   }
@@ -49,7 +34,7 @@ export default function gbTemplate(
 
   const isHex = (value: string) => hexRegex.test(value);
 
-  const isFillStrokeOrStopColor = (name: string | JSXIdentifier) =>
+  const isFillStrokeOrStopColor = (name: string | T.JSXIdentifier) =>
     name === 'fill' || name === 'stroke' || name === 'stopColor';
 
   const getColorsAndModifyAttr = (coCount: number, attributes: Array<any>) => {
@@ -59,7 +44,7 @@ export default function gbTemplate(
       if (attr.value! && isFillStrokeOrStopColor(attr.name.name) && isHex(attr.value.value)) {
         colorArray.push(attr.value.value);
         attr.value.type = 'JSXExpressionContainer';
-        attr.value.expression = { type: 'Identifier', name: `colors[${coCount}]` };
+        attr.value.expression = { type: 'Identifier', name: `_c[${coCount}]` };
         coCount++;
       }
       return attr;
@@ -70,7 +55,13 @@ export default function gbTemplate(
   let count = 0;
   let finalColors: Array<string> = [];
   const loopJsxChildrenAndBuildAttr = (
-    children: (JSXElement | JSXText | JSXExpressionContainer | JSXSpreadChild | JSXFragment)[],
+    children: (
+      | T.JSXElement
+      | T.JSXText
+      | T.JSXExpressionContainer
+      | T.JSXSpreadChild
+      | T.JSXFragment
+    )[],
   ) => {
     children.forEach((childElement: any) => {
       if (childElement.openingElement.attributes.length > 0) {
@@ -91,58 +82,85 @@ export default function gbTemplate(
 
   loopJsxChildrenAndBuildAttr(finalJsx.children);
 
-  const babelTypeColors = finalColors.map((color) => {
-    return {
-      type: 'StringLiteral',
-      value: color,
-    };
-  });
+  const babelTypeColors = finalColors.map((color) => T.stringLiteral(color));
 
-  const defaultColorsJsx = [
-    {
-      type: 'VariableDeclaration',
-      declarations: [
-        {
-          type: 'VariableDeclarator',
-          id: {
-            type: 'Identifier',
-            name: 'defaultColors',
-          },
-          init: {
-            type: 'ArrayExpression',
-            elements: babelTypeColors,
-          },
-        },
-      ],
-      kind: 'const',
-    },
+  const defaultColorsJsx: T.VariableDeclaration[] = [
+    T.variableDeclaration('const', [
+      T.variableDeclarator(T.identifier('DEFAULT_COLORS'), T.arrayExpression(babelTypeColors)),
+    ]),
   ];
 
+  const hasColorMap = opts.colorMap && Object.keys(opts.colorMap).length > 0;
+  if (hasColorMap) {
+    const objectProps = Object.entries(opts.colorMap!).map(([mapName, valueMap]) => {
+      return T.objectProperty(
+        T.identifier(mapName),
+        T.arrayExpression(
+          babelTypeColors.map(({ value: color }) => T.stringLiteral(valueMap[color] || color)),
+        ),
+      );
+    });
+    defaultColorsJsx.push(
+      T.variableDeclaration('const', [
+        T.variableDeclarator(T.identifier('ALTERNATE_COLORS'), T.objectExpression(objectProps)),
+      ]),
+    );
+  }
+
   const propInterface = [
-    interfaceDeclaration(
-      identifier('SvgPropsWithColor'),
+    T.interfaceDeclaration(
+      T.identifier('SvgPropsWithColor'),
       null,
-      [interfaceExtends(identifier('SvgProps'))],
-      objectTypeAnnotation([
-        objectTypeProperty(identifier('colors?'), arrayTypeAnnotation(stringTypeAnnotation())),
+      [T.interfaceExtends(T.identifier('SvgProps'))],
+      T.objectTypeAnnotation([
+        T.objectTypeProperty(
+          T.identifier('colors?'),
+          T.unionTypeAnnotation([
+            T.arrayTypeAnnotation(T.stringTypeAnnotation()),
+            // I don't particularly like this, I'd rather do keyof ALTERNATE_COLORS,
+            // but I can't figure out how
+            ...(hasColorMap ? Object.keys(opts.colorMap!).map(T.stringLiteralTypeAnnotation) : []),
+          ]),
+        ),
       ]),
     ),
   ];
 
   const destructuredProps = props.map((item) => {
-    item.name = '{ colors = defaultColors, ...props }: SvgPropsWithColor';
+    item.name = '{ colors = DEFAULT_COLORS, ...props }: SvgPropsWithColor';
     return item;
   });
 
+  const colorVarValue = hasColorMap
+    ? T.conditionalExpression(
+        T.binaryExpression(
+          '===',
+          T.unaryExpression('typeof', T.identifier('colors')),
+          T.stringLiteral('string'),
+        ),
+        T.parenthesizedExpression(
+          T.logicalExpression(
+            '||',
+            T.memberExpression(T.identifier('ALTERNATE_COLORS'), T.identifier('colors'), true),
+            T.identifier('colors'),
+          ),
+        ),
+        T.identifier('colors'),
+      )
+    : T.identifier('colors');
+  const colorSetup = T.variableDeclaration('const', [
+    T.variableDeclarator(T.identifier('_c'), colorVarValue),
+  ]);
   const typeScriptTpl = template.smart({ plugins });
   return typeScriptTpl.ast`${imports}
     ${interfaces}
-
+    ${'\n'}
     ${defaultColorsJsx}
-
+    ${'\n'}
     ${propInterface}
 
     function ${componentName} (${destructuredProps}) {
+        ${colorSetup}
         return ${finalJsx};
     }
     ${exports}
