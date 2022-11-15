@@ -22,12 +22,22 @@ tap.test('test_generation', (t) => {
     const snapshotDir = path.resolve(__dirname, './snapshots/');
     const result = compareSync(path.resolve(__dirname, './output/'), snapshotDir, {
       compareDate: false,
-      compareContent: true,
-      compareSize: true,
+      compareContent: false,
+      compareSize: false,
     });
     if (!result.same) {
       result.diffSet = result.diffSet?.filter((d) => d.state !== 'equal');
       console.error(JSON.stringify(result, null, '\t'));
+    }
+    const result2 = compareSync(path.resolve(__dirname, './output/'), snapshotDir, {
+      compareDate: false,
+      compareContent: true,
+      compareSize: false,
+      excludeFilter: '**/*.png',
+    });
+    if (!result2.same) {
+      result2.diffSet = result2.diffSet?.filter((d) => d.state !== 'equal');
+      console.error(JSON.stringify(result2, null, '\t'));
     }
     test.ok(result.same, 'Output and snapshot directory should be the same.');
   });
@@ -44,12 +54,22 @@ tap.test('test_generation', (t) => {
     const snapshotDir = path.resolve(__dirname, './inlineSnapshots/');
     const result = compareSync(path.resolve(__dirname, './output/'), snapshotDir, {
       compareDate: false,
-      compareContent: true,
+      compareContent: false,
       compareSize: true,
     });
     if (!result.same) {
       result.diffSet = result.diffSet?.filter((d) => d.state !== 'equal');
       console.error(JSON.stringify(result, null, '\t'));
+    }
+    const result2 = compareSync(path.resolve(__dirname, './output/'), snapshotDir, {
+      compareDate: false,
+      compareContent: true,
+      compareSize: false,
+      excludeFilter: '**/*.png',
+    });
+    if (!result2.same) {
+      result2.diffSet = result2.diffSet?.filter((d) => d.state !== 'equal');
+      console.error(JSON.stringify(result2, null, '\t'));
     }
     test.ok(result.same, 'Output and snapshot directory should be the same.');
   });
