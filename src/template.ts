@@ -1,6 +1,7 @@
 import * as T from '@babel/types';
 import { smart, statement, statements, expression, program } from 'babel__template';
 import { ParserPlugin } from '@babel/parser';
+import assert from 'assert';
 
 interface templateType {
   smart: typeof smart;
@@ -93,6 +94,12 @@ export default function gbTemplate(
   const hasColorMap = opts.colorMap && Object.keys(opts.colorMap).length > 0;
   if (hasColorMap) {
     const objectProps = Object.entries(opts.colorMap!).map(([mapName, valueMap]) => {
+      if (Array.isArray(valueMap)) {
+        assert(
+          valueMap.length === babelTypeColors.length,
+          'colorMap array ${mapName} length must match original color array length',
+        );
+      }
       return T.objectProperty(
         T.identifier(mapName),
         T.arrayExpression(
