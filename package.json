@@ -1,6 +1,6 @@
 {
   "name": "react-native-image-builder",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Type safe code generation for images targeted at React Native",
   "main": "build/index.js",
   "bin": "build/cli.js",

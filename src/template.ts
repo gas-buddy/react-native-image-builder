@@ -22,7 +22,7 @@ interface astPartsType {
 
 export default function gbTemplate(
   { template }: { template: templateType },
-  opts: { typescript: object; colorMap?: Record<string, Record<string, string>> },
+  opts: { typescript: object; colorMap?: Record<string, Record<string, string> | string[]> },
   { imports, interfaces, componentName, props, jsx, exports }: astPartsType,
 ) {
   const plugins: ParserPlugin[] = ['jsx'];
@@ -96,7 +96,9 @@ export default function gbTemplate(
       return T.objectProperty(
         T.identifier(mapName),
         T.arrayExpression(
-          babelTypeColors.map(({ value: color }) => T.stringLiteral(valueMap[color] || color)),
+          Array.isArray(valueMap)
+            ? valueMap.map((color) => T.stringLiteral(color))
+            : babelTypeColors.map(({ value: color }) => T.stringLiteral(valueMap[color] || color)),
         ),
       );
     });
