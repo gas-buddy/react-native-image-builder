@@ -221,10 +221,14 @@ export const ${safeName(name)}$size = [${this.imageSizes[name].join(', ')}];`;
         .join(' |\n  ')
         .trim()};`,
     );
+    // TODO this should be refactored to be a generic type based on
+    // alternate color values for the individual images. That will required changing the Vectors types above
+    // probably to some sort of interface with members for each vector image.
+    // Then we have to change getVector to be generic, and then maybe it all falls out.
     lines.push(
       '',
       'export interface SvgPropsWithColor extends SvgProps {',
-      '  colors?: string[];',
+      '  colors?: string[] | string;',
       '}',
     );
 

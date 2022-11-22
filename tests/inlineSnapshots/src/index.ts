@@ -13,7 +13,7 @@ export type Vectors = "icon/trophy" |
   "icon/makemeanimage";
 
 export interface SvgPropsWithColor extends SvgProps {
-  colors?: string[];
+  colors?: string[] | string;
 }
 
 export function getBitmap(name: Bitmaps): ImageSourcePropType {
