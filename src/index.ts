@@ -392,7 +392,11 @@ export function useBitmaps(...names: Array<Bitmaps>) {
         const outDir = path.dirname(outputFile);
         const relOutput = path.relative(outputDirectory, outDir);
         this.addIndex(relOutput, path.basename(outputFile).replace(/.tsx$/, ''), 'svg');
-        if (needsUpdate(inputFile, outputFile) || (fs.existsSync(`${inputFile}.colors.json`) && needsUpdate(`${inputFile}.colors.json`, outputFile))) {
+        if (
+          needsUpdate(inputFile, outputFile) ||
+          (fs.existsSync(`${inputFile}.colors.json`) &&
+            needsUpdate(`${inputFile}.colors.json`, outputFile))
+        ) {
           console.log('Generating JS from SVG', file);
           const code = transformSvg(inputFile);
           mkdirp.sync(outDir);
